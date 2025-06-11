@@ -1,0 +1,16 @@
+admin_username=admin@admin.com
+admin_password=123
+
+profesor_username=profesor@utm.edu
+profesor_password=123
+
+estudiante1_username=estudiante1@utm.edu
+estudiante1_password=123
+
+# Usuario profesor de prueba para modal
+teacher_username=profesor@utm.edu
+teacher_password=123
+
+# Estudiantes de prueba
+student1_username=estudiante1@utm.edu
+student1_password=123

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% set current_page = 'courses' %}
+{% set user_role = session.user_role or 'admin' %}
+{% set user_name = session.user_name or 'Admin' %}
+{% block title %}SGA UTM | Estudiantes del Curso{% endblock %}{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Estudiantes del Curso: {{ course.name }}</h1>
+        <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Cursos
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Información del Curso</h5>
+                    <p class="card-text">
+                        <strong>Código:</strong> {{ course.course_code }}<br>
+                        <strong>Nombre:</strong> {{ course.name }}<br>
+                        <strong>Créditos:</strong> {{ course.credits }}<br>
+                        {% if course.description %}
+                        <strong>Descripción:</strong> {{ course.description }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Estadísticas</h5>
+                    <p class="card-text">
+                        <strong>Total de estudiantes inscritos:</strong> {{ enrolled_students|length }}<br>
+                        <strong>Estudiantes activos:</strong> {{ enrolled_students|selectattr('status', 'equalto', 'enrolled')|list|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lista de Estudiantes Inscritos</h5>
+        </div>
+        <div class="card-body">
+            {% if enrolled_students %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Código Estudiante</th>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th>Fecha de Inscripción</th>
+                            <th>Estado</th>
+                            <th>Calificación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in enrolled_students %}
+                        <tr>
+                            <td>{{ student.student_code }}</td>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>
+                                {% if student.enrollment_date %}
+                                {{ student.enrollment_date.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.status == 'enrolled' %}
+                                    <span class="badge bg-success">Inscrito</span>
+                                {% elif student.status == 'withdrawn' %}
+                                    <span class="badge bg-warning">Retirado</span>
+                                {% elif student.status == 'completed' %}
+                                    <span class="badge bg-primary">Completado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ student.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.grade %}
+                                    {{ "%.2f"|format(student.grade) }}
+                                {% else %}
+                                    <span class="text-muted">Sin calificar</span>
+                                {% endif %}
+                            </td>                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <form method="post" action="{{ url_for('admin.update_enrollment_status', course_id=course.id, enrollment_id=student.enrollment_id) }}" style="display: inline;">
+                                        <input type="hidden" name="action" value="withdraw">
+                                        <button type="submit" class="btn btn-warning btn-sm" 
+                                                {% if student.status == 'withdrawn' %}disabled{% endif %}
+                                                onclick="return confirm('¿Está seguro de retirar al estudiante del curso?')">
+                                            Retirar
+                                        </button>
+                                    </form>
+                                    <!-- Nota: Solo los profesores pueden calificar estudiantes por razones de seguridad académica -->
+                                </div>
+                            </td>                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people fs-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No hay estudiantes inscritos</h4>
+                <p class="text-muted">Este curso aún no tiene estudiantes inscritos.</p>
+                <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-primary">
+                    Volver a gestión de cursos
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons CDN (si no está incluido en base.html) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+{% endblock %}

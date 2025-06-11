@@ -1,0 +1,629 @@
+{% extends 'base.html' %}
+{% set current_page = 'users' %}
+{% set user_role = session.user_role or 'admin' %}
+{% set user_name = session.user_name or 'Admin' %}
+{% block title %}SGA UTM | Panel Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-people me-2"></i>Gestión de Usuarios</h2>
+    <button class="btn btn-primary" onclick="showUserForm()">
+        <i class="bi bi-person-plus me-1"></i>Nuevo usuario
+    </button>
+</div>
+
+<!-- Estadísticas generales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Usuarios</h6>
+                        <h3 class="mb-0" id="total-users">-</h3>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Administradores</h6>
+                        <h3 class="mb-0" id="total-admins">-</h3>
+                    </div>
+                    <i class="bi bi-shield-check fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Docentes</h6>
+                        <h3 class="mb-0" id="total-teachers">-</h3>
+                    </div>
+                    <i class="bi bi-mortarboard fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Estudiantes</h6>
+                        <h3 class="mb-0" id="total-students">-</h3>
+                    </div>
+                    <i class="bi bi-person-graduation fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs para diferentes tipos de usuarios -->
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" id="userTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab">
+                    <i class="bi bi-shield-check me-1"></i>Administradores
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button" role="tab">
+                    <i class="bi bi-mortarboard me-1"></i>Docentes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">
+                    <i class="bi bi-person-graduation me-1"></i>Estudiantes
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="userTabsContent">
+            <!-- Tab Administradores -->
+            <div class="tab-pane fade show active" id="admins" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Usuarios Administradores</h6>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Buscar admin..." id="search-admins" style="width: 200px;">
+                        <button class="btn btn-sm btn-outline-primary" onclick="showUserForm(null, 'admin')">
+                            <i class="bi bi-plus"></i> Nuevo Admin
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admins-table-body">
+                            <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Docentes -->
+            <div class="tab-pane fade" id="teachers" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Usuarios Docentes</h6>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Buscar docente..." id="search-teachers" style="width: 200px;">
+                        <button class="btn btn-sm btn-outline-info" onclick="showUserForm(null, 'teacher')">
+                            <i class="bi bi-plus"></i> Nuevo Docente
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>ID Empleado</th>
+                                <th>Departamento</th>
+                                <th>Fecha Contratación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachers-table-body">
+                            <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Estudiantes -->
+            <div class="tab-pane fade" id="students" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Usuarios Estudiantes</h6>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Buscar estudiante..." id="search-students" style="width: 200px;">
+                        <button class="btn btn-sm btn-outline-warning" onclick="showUserForm(null, 'student')">
+                            <i class="bi bi-plus"></i> Nuevo Estudiante
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Código Estudiante</th>
+                                <th>Carrera</th>
+                                <th>Fecha Inscripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body">
+                            <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para crear/editar usuario -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="user-form">
+        <div class="modal-header">
+          <h5 class="modal-title" id="userModalLabel">Registrar usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="user-id">
+          
+          <!-- Información básica -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="username" id="username" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" name="email" id="email" required>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="role" class="form-label">Rol <span class="text-danger">*</span></label>
+                <select class="form-select" name="role" id="role" required onchange="toggleRoleFields()">
+                  <option value="">Seleccionar rol...</option>
+                  <option value="admin">Admin</option>
+                  <option value="teacher">Docente</option>
+                  <option value="student">Estudiante</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" name="password" id="password" required>
+                <div class="form-text">Mínimo 6 caracteres</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del perfil -->
+          <hr>
+          <h6 class="mb-3">Información Personal</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="first_name" class="form-label">Nombres</label>
+                <input type="text" class="form-control" name="first_name" id="first_name">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="last_name" class="form-label">Apellidos</label>
+                <input type="text" class="form-control" name="last_name" id="last_name">
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos específicos para docentes -->
+          <div id="teacher-fields" style="display: none;">
+            <hr>
+            <h6 class="mb-3">Información del Docente</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="employee_id" class="form-label">ID Empleado</label>
+                  <input type="text" class="form-control" name="employee_id" id="employee_id">
+                  <div class="form-text">Si se deja vacío, se generará automáticamente</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="department" class="form-label">Departamento</label>
+                  <input type="text" class="form-control" name="department" id="department">
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="hire_date" class="form-label">Fecha de Contratación</label>
+              <input type="date" class="form-control" name="hire_date" id="hire_date">
+            </div>
+          </div>
+
+          <!-- Campos específicos para estudiantes -->
+          <div id="student-fields" style="display: none;">
+            <hr>
+            <h6 class="mb-3">Información del Estudiante</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="student_code" class="form-label">Código de Estudiante</label>
+                  <input type="text" class="form-control" name="student_code" id="student_code">
+                  <div class="form-text">Si se deja vacío, se generará automáticamente</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="major" class="form-label">Carrera</label>
+                  <input type="text" class="form-control" name="major" id="major">
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="enrollment_date" class="form-label">Fecha de Inscripción</label>
+              <input type="date" class="form-control" name="enrollment_date" id="enrollment_date">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// Variables globales
+let userModal;
+let currentTab = 'admins';
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    userModal = new bootstrap.Modal(document.getElementById('userModal'));
+    fetchAllUsers();
+    setupEventListeners();
+});
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Tabs
+    document.querySelectorAll('#userTabs button[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            currentTab = event.target.getAttribute('data-bs-target').substring(1);
+            fetchUsersByRole(getCurrentRole());
+        });
+    });
+
+    // Búsqueda
+    document.getElementById('search-admins').addEventListener('input', () => filterTable('admins'));
+    document.getElementById('search-teachers').addEventListener('input', () => filterTable('teachers'));
+    document.getElementById('search-students').addEventListener('input', () => filterTable('students'));
+}
+
+// Obtener el rol actual basado en la tab activa
+function getCurrentRole() {
+    switch(currentTab) {
+        case 'admins': return 'admin';
+        case 'teachers': return 'teacher';
+        case 'students': return 'student';
+        default: return 'admin';
+    }
+}
+
+// Obtener todos los usuarios y mostrar estadísticas
+function fetchAllUsers() {
+    fetch('/admin/users')
+        .then(r => r.json())
+        .then(users => {
+            updateStatistics(users);
+            displayUsersByRole(users, 'admin', 'admins-table-body');
+            displayUsersByRole(users, 'teacher', 'teachers-table-body');
+            displayUsersByRole(users, 'student', 'students-table-body');
+        })
+        .catch(err => console.error('Error fetching users:', err));
+}
+
+// Obtener usuarios por rol específico
+function fetchUsersByRole(role) {
+    fetch(`/admin/users?role=${role}`)
+        .then(r => r.json())
+        .then(users => {
+            const tableId = role + 's-table-body';
+            displayUsersByRole(users, role, tableId);
+        })
+        .catch(err => console.error('Error fetching users by role:', err));
+}
+
+// Actualizar estadísticas
+function updateStatistics(users) {
+    const stats = {
+        total: users.length,
+        admin: users.filter(u => u.role === 'admin').length,
+        teacher: users.filter(u => u.role === 'teacher').length,
+        student: users.filter(u => u.role === 'student').length
+    };
+
+    document.getElementById('total-users').textContent = stats.total;
+    document.getElementById('total-admins').textContent = stats.admin;
+    document.getElementById('total-teachers').textContent = stats.teacher;
+    document.getElementById('total-students').textContent = stats.student;
+}
+
+// Mostrar usuarios por rol en la tabla correspondiente
+function displayUsersByRole(users, role, tableBodyId) {
+    const filteredUsers = users.filter(u => u.role === role);
+    const tbody = document.getElementById(tableBodyId);
+    
+    if (filteredUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${getColumnCount(role)}" class="text-center text-muted">No hay ${role}s registrados</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filteredUsers.map(user => generateUserRow(user, role)).join('');
+}
+
+// Obtener número de columnas por rol
+function getColumnCount(role) {
+    switch(role) {
+        case 'admin': return 5;
+        case 'teacher': return 7;
+        case 'student': return 7;
+        default: return 5;
+    }
+}
+
+// Generar fila de usuario según el rol
+function generateUserRow(user, role) {
+    const baseRow = `
+        <td>${user.id}</td>
+        <td><strong>${user.username}</strong></td>
+        <td>${user.email}</td>
+    `;
+
+    let specificColumns = '';
+    switch(role) {
+        case 'admin':
+            specificColumns = `
+                <td>${user.created_at || '-'}</td>
+            `;
+            break;
+        case 'teacher':
+            specificColumns = `
+                <td>${user.teacher_info?.employee_id || '-'}</td>
+                <td>${user.teacher_info?.department || '-'}</td>
+                <td>${user.teacher_info?.hire_date || '-'}</td>
+            `;
+            break;
+        case 'student':
+            specificColumns = `
+                <td>${user.student_info?.student_code || '-'}</td>
+                <td>${user.student_info?.major || '-'}</td>
+                <td>${user.student_info?.enrollment_date || '-'}</td>
+            `;
+            break;
+    }
+
+    const actions = `
+        <td>
+            <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-primary" onclick="editUser(${JSON.stringify(user).replace(/"/g, '&quot;')})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteUser(${user.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+
+    return `<tr>${baseRow}${specificColumns}${actions}</tr>`;
+}
+
+// Filtrar tabla por búsqueda
+function filterTable(tableType) {
+    const searchValue = document.getElementById(`search-${tableType}`).value.toLowerCase();
+    const tableBody = document.getElementById(`${tableType}-table-body`);
+    const rows = tableBody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchValue) ? '' : 'none';
+    });
+}
+
+// Mostrar formulario de usuario
+function showUserForm(user = null, defaultRole = null) {
+    document.getElementById('user-form').reset();
+    
+    // Configurar modal
+    const modalTitle = user ? 'Editar usuario' : 'Registrar usuario';
+    document.getElementById('userModalLabel').textContent = modalTitle;
+    
+    // Llenar campos si es edición
+    if (user) {
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('username').value = user.username;
+        document.getElementById('email').value = user.email;
+        document.getElementById('role').value = user.role;
+        document.getElementById('password').required = false;
+        
+        // Llenar información adicional si existe
+        if (user.profile_info) {
+            document.getElementById('first_name').value = user.profile_info.first_name || '';
+            document.getElementById('last_name').value = user.profile_info.last_name || '';
+        }
+        
+        if (user.teacher_info && user.role === 'teacher') {
+            document.getElementById('employee_id').value = user.teacher_info.employee_id || '';
+            document.getElementById('department').value = user.teacher_info.department || '';
+            document.getElementById('hire_date').value = user.teacher_info.hire_date || '';
+        }
+        
+        if (user.student_info && user.role === 'student') {
+            document.getElementById('student_code').value = user.student_info.student_code || '';
+            document.getElementById('major').value = user.student_info.major || '';
+            document.getElementById('enrollment_date').value = user.student_info.enrollment_date || '';
+        }
+    } else {
+        document.getElementById('user-id').value = '';
+        document.getElementById('password').required = true;
+        
+        // Establecer rol por defecto si se proporciona
+        if (defaultRole) {
+            document.getElementById('role').value = defaultRole;
+        }
+        
+        // Establecer fechas por defecto
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('hire_date').value = today;
+        document.getElementById('enrollment_date').value = today;
+    }
+    
+    toggleRoleFields();
+    userModal.show();
+}
+
+// Mostrar/ocultar campos específicos del rol
+function toggleRoleFields() {
+    const role = document.getElementById('role').value;
+    
+    // Ocultar todos los campos específicos
+    document.getElementById('teacher-fields').style.display = 'none';
+    document.getElementById('student-fields').style.display = 'none';
+    
+    // Mostrar campos según el rol
+    if (role === 'teacher') {
+        document.getElementById('teacher-fields').style.display = 'block';
+    } else if (role === 'student') {
+        document.getElementById('student-fields').style.display = 'block';
+    }
+}
+
+// Editar usuario
+function editUser(user) {
+    showUserForm(user);
+}
+
+// Envío del formulario
+document.getElementById('user-form').onsubmit = function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Limpiar campos vacíos
+    Object.keys(data).forEach(key => {
+        if (data[key] === '') delete data[key];
+    });
+    
+    const id = data.id;
+    delete data.id; // Remover ID de los datos a enviar
+    
+    const url = id ? `/admin/users/${id}` : '/admin/users';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => {
+        if (r.ok) {
+            userModal.hide();
+            fetchAllUsers();
+            showAlert('Usuario ' + (id ? 'actualizado' : 'creado') + ' exitosamente', 'success');
+        } else {
+            return r.json().then(err => {
+                throw new Error(err.msg || 'Error al procesar la solicitud');
+            });
+        }
+    })
+    .catch(err => {
+        showAlert('Error: ' + err.message, 'danger');
+    });
+};
+
+// Eliminar usuario
+function deleteUser(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
+        fetch(`/admin/users/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (r.ok) {
+                    fetchAllUsers();
+                    showAlert('Usuario eliminado exitosamente', 'success');
+                } else {
+                    return r.json().then(err => {
+                        throw new Error(err.msg || 'Error al eliminar usuario');
+                    });
+                }
+            })
+            .catch(err => {
+                showAlert('Error: ' + err.message, 'danger');
+            });
+    }
+}
+
+// Mostrar alertas
+function showAlert(message, type) {
+    const alertContainer = document.createElement('div');
+    alertContainer.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insertar al inicio del contenido
+    const content = document.querySelector('.container, .container-fluid, [role="main"]') || document.body;
+    content.insertBefore(alertContainer, content.firstChild);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        if (alertContainer.parentNode) {
+            alertContainer.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

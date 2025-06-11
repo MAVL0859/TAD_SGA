@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}SGA UTM | Mis Cursos{% endblock %}
+
+{% block nav_links %}
+  {% if session.role == 'student' %}
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('course.list_courses') }}">Mis Cursos</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('student.student_profile') }}">Mi Perfil</a></li>
+  {% elif session.role == 'teacher' %}
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('course.list_courses') }}">Mis Cursos</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('teacher.teacher_profile') }}">Mi Perfil</a></li>
+  {% endif %}
+{% endblock %}
+
+{% block nav_user %}
+  {% if session.user_name %}
+    {{ session.user_name }} ({{ session.role }})
+  {% else %}
+    Usuario
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Mis Cursos</h1>
+    {% if courses %}
+        <div class="row">
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.name }}</h5>
+                            <p class="card-text">{{ course.description or 'Sin descripción.' }}</p>
+                            <p class="card-text"><small class="text-muted">Profesor: {{ course.teacher.user.first_name }} {{ course.teacher.user.last_name }}</small></p>
+                            {# Aquí puedes agregar más detalles o acciones del curso #}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No tienes cursos asignados en este momento.</p>
+    {% endif %}
+</div>
+{% endblock %}

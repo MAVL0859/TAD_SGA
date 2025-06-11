@@ -1,0 +1,97 @@
+{# Macros para generar navegación dinámica según el rol del usuario #}
+
+{% macro render_nav_links(user_role, current_page='') %}
+  {% if user_role == 'admin' %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'dashboard' else '' }}" href="{{ url_for('dashboard.admin_dashboard') }}">
+        <i class="bi bi-speedometer2"></i> Panel Admin
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'users' else '' }}" href="{{ url_for('dashboard.admin_dashboard') }}">
+        <i class="bi bi-people"></i> Usuarios
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'courses' else '' }}" href="{{ url_for('admin.manage_courses') }}">
+        <i class="bi bi-journal-bookmark"></i> Gestión de Cursos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'logs' else '' }}" href="/admin/logs">
+        <i class="bi bi-file-text"></i> Logs de acceso
+      </a>
+    </li>
+  {% elif user_role == 'teacher' %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'dashboard' else '' }}" href="{{ url_for('dashboard.teacher_dashboard') }}">
+        <i class="bi bi-speedometer2"></i> Panel Docente
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'courses' else '' }}" href="/teacher/courses">
+        <i class="bi bi-journal-bookmark"></i> Mis Cursos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'profile' else '' }}" href="/teacher/profile">
+        <i class="bi bi-person"></i> Mi Perfil
+      </a>
+    </li>
+  {% elif user_role == 'student' %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'dashboard' else '' }}" href="{{ url_for('dashboard.student_dashboard') }}">
+        <i class="bi bi-speedometer2"></i> Panel Estudiante
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'courses' else '' }}" href="/student/courses">
+        <i class="bi bi-journal-bookmark"></i> Mis Cursos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'profile' else '' }}" href="/student/profile">
+        <i class="bi bi-person"></i> Mi Perfil
+      </a>
+    </li>
+  {% else %}
+    {# Usuario no autenticado #}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'home' else '' }}" href="/">
+        <i class="bi bi-house"></i> Inicio
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if current_page == 'login' else '' }}" href="/login">
+        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+      </a>
+    </li>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_user_info(user_role, user_name='') %}
+  {% if user_role %}
+    {% if user_name %}
+      {{ user_name }} 
+    {% else %}
+      Usuario
+    {% endif %}
+    {% if user_role == 'admin' %}
+      <span class="badge bg-danger ms-1">Admin</span>
+    {% elif user_role == 'teacher' %}
+      <span class="badge bg-success ms-1">Docente</span>
+    {% elif user_role == 'student' %}
+      <span class="badge bg-info ms-1">Estudiante</span>
+    {% endif %}
+  {% else %}
+    Invitado
+  {% endif %}
+{% endmacro %}
+
+{% macro render_logout_button(user_role) %}
+  {% if user_role %}
+    <button class="btn btn-outline-light btn-sm" onclick="window.location='/logout'">
+      <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+    </button>
+  {% endif %}
+{% endmacro %}

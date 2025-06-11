@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% set current_page = 'dashboard' %}
+{% set user_role = session.user_role or 'student' %}
+{% set user_name = session.user_name or 'Estudiante' %}
+{% block title %}SGA UTM | Panel Estudiante{% endblock %}
+
+{% block extra_head %}
+<style>
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  transition: transform 0.3s ease;
+}
+.stats-card:hover {
+  transform: translateY(-5px);
+}
+.progress-ring {
+  transform: rotate(-90deg);
+}
+.progress-ring circle {
+  transition: stroke-dasharray 0.5s ease;
+}
+.assignment-card {
+  border-left: 4px solid #2a3b8f;
+  transition: all 0.3s ease;
+}
+.assignment-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.quick-action-btn {
+  transition: all 0.3s ease;
+}
+.quick-action-btn:hover {
+  transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Panel de Control Estudiantil</h2>
+    <p class="text-muted mb-0">Bienvenido de vuelta, {{ session.user_name or 'Estudiante' }}</p>
+  </div>  <div class="text-end">
+    <small class="text-muted">Bienvenido al sistema</small>
+  </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card stats-card h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-book fa-2x mb-3"></i>
+        <h3 class="mb-1" id="coursesCount">0</h3>
+        <p class="mb-0">Cursos Inscritos</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-tasks fa-2x mb-3"></i>
+        <h3 class="mb-1" id="assignmentsCount">0</h3>
+        <p class="mb-0">Tareas Pendientes</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-white h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-clock fa-2x mb-3"></i>
+        <h3 class="mb-1" id="upcomingCount">0</h3>
+        <p class="mb-0">Próximas Entregas</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-info text-white h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-star fa-2x mb-3"></i>
+        <h3 class="mb-1" id="averageGrade">0.0</h3>
+        <p class="mb-0">Promedio General</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Panel Principal -->
+  <div class="col-lg-8">
+    <!-- Cursos Actuales -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Mis Cursos</h5>
+        <a href="/student/courses" class="btn btn-sm btn-outline-primary">Ver todos</a>
+      </div>
+      <div class="card-body" id="coursesContainer">
+        <div class="text-center py-4">
+          <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+          <p class="mt-2 text-muted">Cargando cursos...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tareas Pendientes -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Tareas Pendientes</h5>
+      </div>
+      <div class="card-body" id="assignmentsContainer">
+        <div class="assignment-card card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">Proyecto Final - Sistema Web</h6>
+                <p class="mb-1 text-muted">Programación Web</p>
+                <small class="text-danger">
+                  <i class="fas fa-clock me-1"></i>Vence en 3 días
+                </small>
+              </div>
+              <span class="badge bg-danger">Urgente</span>
+            </div>
+          </div>
+        </div>
+        <div class="assignment-card card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">Ejercicios de Normalización</h6>
+                <p class="mb-1 text-muted">Base de Datos</p>
+                <small class="text-warning">
+                  <i class="fas fa-clock me-1"></i>Vence en 1 semana
+                </small>
+              </div>
+              <span class="badge bg-warning">Próxima</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Lateral -->
+  <div class="col-lg-4">
+    <!-- Progreso Académico -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Progreso Académico</h5>
+      </div>
+      <div class="card-body text-center">
+        <div class="position-relative d-inline-block mb-3">
+          <svg width="120" height="120" class="progress-ring">
+            <circle cx="60" cy="60" r="50" stroke="#e9ecef" stroke-width="8" fill="transparent"/>
+            <circle cx="60" cy="60" r="50" stroke="#28a745" stroke-width="8" fill="transparent"
+                    stroke-dasharray="314" stroke-dashoffset="94.2" id="progressCircle"/>
+          </svg>
+          <div class="position-absolute top-50 start-50 translate-middle">
+            <h4 class="mb-0" id="progressPercent">70%</h4>
+            <small class="text-muted">Completado</small>
+          </div>
+        </div>
+        <p class="mb-0 text-muted">Semestre actual en progreso</p>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="/student/courses" class="btn btn-primary quick-action-btn">
+            <i class="fas fa-book me-2"></i>Ver Cursos
+          </a>
+          <a href="/student/profile" class="btn btn-outline-primary quick-action-btn">
+            <i class="fas fa-user me-2"></i>Mi Perfil
+          </a>
+          <button class="btn btn-outline-success quick-action-btn" onclick="viewTranscript()">
+            <i class="fas fa-file-alt me-2"></i>Ver Expediente
+          </button>
+          <button class="btn btn-outline-info quick-action-btn" onclick="viewSchedule()">
+            <i class="fas fa-calendar me-2"></i>Mi Horario
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendario/Próximos Eventos -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Próximos Eventos</h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          <div class="list-group-item border-0 px-0">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="mb-1">Examen Parcial</h6>
+                <small class="text-muted">Matemáticas Discretas</small>
+              </div>
+              <small class="text-danger">Mañana</small>
+            </div>
+          </div>
+          <div class="list-group-item border-0 px-0">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="mb-1">Presentación Proyecto</h6>
+                <small class="text-muted">Programación Web</small>
+              </div>
+              <small class="text-warning">En 3 días</small>
+            </div>
+          </div>
+          <div class="list-group-item border-0 px-0">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="mb-1">Entrega de Ensayo</h6>
+                <small class="text-muted">Metodología</small>
+              </div>
+              <small class="text-info">Próxima semana</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Cargar datos del dashboard
+document.addEventListener('DOMContentLoaded', function() {
+  loadDashboardData();
+});
+
+async function loadDashboardData() {
+  try {
+    const response = await fetch('/student/dashboard/data');
+    const data = await response.json();
+    
+    if (data.error) {
+      console.error('Error from API:', data.error);
+      // Usar datos de ejemplo en caso de error
+      useExampleData();
+      return;
+    }
+    
+    // Actualizar estadísticas
+    document.getElementById('coursesCount').textContent = data.courses_count || 0;
+    document.getElementById('assignmentsCount').textContent = data.assignments_count || 0;
+    document.getElementById('upcomingCount').textContent = data.upcoming_count || 0;
+    document.getElementById('averageGrade').textContent = (data.general_average || 0).toFixed(1);
+    
+    // Cargar cursos
+    loadCourses(data.courses || []);
+    
+    // Actualizar progreso general
+    const progressPercent = data.general_average ? Math.round((data.general_average / 10) * 100) : 70;
+    updateProgressRing(progressPercent);
+    
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    useExampleData();
+  }
+}
+
+function useExampleData() {
+  // Datos de ejemplo como fallback
+  const data = {
+    courses_count: 6,
+    assignments_count: 4,
+    upcoming_count: 2,
+    average_grade: 8.5,
+    courses: [
+      {
+        id: 1,
+        name: "Programación Web",
+        course_code: "INFO-301",
+        credits: 4,
+        teacher_name: "Dr. María González",
+        progress: 75
+      },
+      {
+        id: 2,
+        name: "Base de Datos",
+        course_code: "INFO-302",
+        credits: 4,
+        teacher_name: "Ing. Carlos Pérez",
+        progress: 60
+      },
+      {
+        id: 3,
+        name: "Matemáticas Discretas",
+        course_code: "MATH-201",
+        credits: 3,
+        teacher_name: "Dr. Ana Silva",
+        progress: 80
+      }
+    ]
+  };
+  
+  // Actualizar estadísticas
+  document.getElementById('coursesCount').textContent = data.courses_count;
+  document.getElementById('assignmentsCount').textContent = data.assignments_count;
+  document.getElementById('upcomingCount').textContent = data.upcoming_count;
+  document.getElementById('averageGrade').textContent = data.average_grade.toFixed(1);
+  
+  // Cargar cursos
+  loadCourses(data.courses);
+  
+  // Actualizar progreso
+  updateProgressRing(85);
+}
+
+function updateProgressRing(percent) {
+  const circle = document.getElementById('progressCircle');
+  const percentElement = document.getElementById('progressPercent');
+  
+  if (circle && percentElement) {
+    const radius = 50;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percent / 100) * circumference;
+    
+    circle.style.strokeDashoffset = offset;
+    percentElement.textContent = `${percent}%`;
+  }
+}
+
+function loadCourses(courses) {
+  const container = document.getElementById('coursesContainer');
+  
+  if (courses.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-4">
+        <i class="fas fa-graduation-cap fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No tienes cursos inscritos actualmente</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = courses.map(course => `
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h6 class="mb-1">${course.name}</h6>
+            <p class="mb-1 text-muted">${course.course_code} • ${course.credits} créditos</p>
+            <small class="text-muted">
+              <i class="fas fa-chalkboard-teacher me-1"></i>${course.teacher_name}
+            </small>
+            <div class="progress mt-2" style="height: 6px;">
+              <div class="progress-bar" role="progressbar" style="width: ${course.progress}%"></div>
+            </div>
+            <small class="text-muted">${course.progress}% completado</small>
+          </div>
+          <div class="col-md-4 text-end">
+            <a href="/student/courses/${course.id}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-eye me-1"></i>Ver Curso
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function viewTranscript() {
+  alert('Función de expediente académico en desarrollo');
+}
+
+function viewSchedule() {
+  alert('Función de horario en desarrollo');
+}
+</script>
+{% endblock %}

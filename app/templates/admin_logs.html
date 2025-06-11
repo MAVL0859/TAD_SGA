@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% set current_page = 'logs' %}
+{% set user_role = session.user_role or 'admin' %}
+{% set user_name = session.user_name or 'Admin' %}
+{% block title %}SGA UTM | Logs de Acceso{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-file-text me-2"></i>Logs de Acceso al Sistema</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" onclick="refreshLogs()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+        <button class="btn btn-outline-info" onclick="showStats()">
+            <i class="bi bi-graph-up me-1"></i>Estadísticas
+        </button>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtros de Búsqueda</h6>
+    </div>
+    <div class="card-body">
+        <form id="filters-form" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Usuario</label>
+                <input type="text" class="form-control" id="user-filter" placeholder="Buscar por usuario...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Acción</label>
+                <select class="form-select" id="action-filter">
+                    <option value="">Todas las acciones</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="LOGOUT">Logout</option>
+                    <option value="VIEW_PAGE">Ver página</option>
+                    <option value="CREATE">Crear</option>
+                    <option value="UPDATE">Actualizar</option>
+                    <option value="DELETE">Eliminar</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="status-filter">
+                    <option value="">Todos</option>
+                    <option value="SUCCESS">Exitoso</option>
+                    <option value="FAILED">Fallido</option>
+                    <option value="BLOCKED">Bloqueado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" class="form-control" id="date-from">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" class="form-control" id="date-to">
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                    <i class="bi bi-search me-1"></i>Filtrar
+                </button>
+                <button type="button" class="btn btn-outline-secondary ms-2" onclick="clearFilters()">
+                    <i class="bi bi-x-circle me-1"></i>Limpiar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de logs -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Registros de Acceso</h6>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted" id="total-count">Total: 0 registros</span>
+            <select class="form-select form-select-sm" id="per-page" style="width: auto;" onchange="changePerPage()">
+                <option value="25">25 por página</option>
+                <option value="50" selected>50 por página</option>
+                <option value="100">100 por página</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha/Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Endpoint</th>
+                        <th>IP</th>
+                        <th>Estado</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr>
+                        <td colspan="7" class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <nav aria-label="Paginación de logs">
+            <ul class="pagination pagination-sm mb-0" id="pagination">
+                <!-- La paginación se generará dinámicamente -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal de estadísticas -->
+<div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statsModalLabel">
+                    <i class="bi bi-graph-up me-2"></i>Estadísticas de Acceso
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Total de Logs</h5>
+                                <h2 class="mb-0" id="stat-total-logs">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Logins Fallidos</h5>
+                                <h2 class="mb-0" id="stat-failed-logins">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h6>Usuarios más Activos (últimos 7 días)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Accesos</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-users-table">
+                                    <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h6>Acciones más Comunes</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Acción</th>
+                                        <th>Frecuencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top-actions-table">
+                                    <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentPage = 1;
+let perPage = 50;
+let totalPages = 1;
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadLogs();
+});
+
+// Cargar logs con filtros actuales
+function loadLogs(page = 1) {
+    currentPage = page;
+    const params = new URLSearchParams({
+        page: page,
+        per_page: perPage,
+        user: document.getElementById('user-filter').value,
+        action: document.getElementById('action-filter').value,
+        status: document.getElementById('status-filter').value,
+        date_from: document.getElementById('date-from').value,
+        date_to: document.getElementById('date-to').value
+    });
+
+    fetch(`/admin/logs/data?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            displayLogs(data.logs);
+            updatePagination(data.pagination);
+            document.getElementById('total-count').textContent = `Total: ${data.pagination.total} registros`;
+        })
+        .catch(error => {
+            console.error('Error loading logs:', error);
+            document.getElementById('logs-table-body').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Error al cargar logs</td></tr>';
+        });
+}
+
+// Mostrar logs en la tabla
+function displayLogs(logs) {
+    const tbody = document.getElementById('logs-table-body');
+    
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay registros que mostrar</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = logs.map(log => {
+        const statusBadge = getStatusBadge(log.status);
+        const actionBadge = getActionBadge(log.action);
+        
+        return `
+            <tr>
+                <td>${log.timestamp}</td>
+                <td><strong>${log.username}</strong></td>
+                <td>${actionBadge}</td>
+                <td><small class="text-muted">${log.endpoint || '-'}</small></td>
+                <td><small>${log.ip_address || '-'}</small></td>
+                <td>${statusBadge}</td>
+                <td>
+                    ${log.details ? 
+                        `<span class="text-muted" title="${log.details}">${log.details.substring(0, 50)}${log.details.length > 50 ? '...' : ''}</span>` 
+                        : '-'
+                    }
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Obtener badge para el estado
+function getStatusBadge(status) {
+    const badges = {
+        'SUCCESS': '<span class="badge bg-success">Exitoso</span>',
+        'FAILED': '<span class="badge bg-danger">Fallido</span>',
+        'BLOCKED': '<span class="badge bg-warning">Bloqueado</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+}
+
+// Obtener badge para la acción
+function getActionBadge(action) {
+    const badges = {
+        'LOGIN': '<span class="badge bg-primary">Login</span>',
+        'LOGOUT': '<span class="badge bg-secondary">Logout</span>',
+        'VIEW_PAGE': '<span class="badge bg-info">Ver</span>',
+        'CREATE': '<span class="badge bg-success">Crear</span>',
+        'UPDATE': '<span class="badge bg-warning">Actualizar</span>',
+        'DELETE': '<span class="badge bg-danger">Eliminar</span>'
+    };
+    return badges[action] || `<span class="badge bg-light text-dark">${action}</span>`;
+}
+
+// Actualizar paginación
+function updatePagination(pagination) {
+    totalPages = pagination.pages;
+    const paginationEl = document.getElementById('pagination');
+    
+    let paginationHtml = '';
+    
+    // Botón anterior
+    if (pagination.has_prev) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadLogs(${currentPage - 1})">Anterior</a></li>`;
+    } else {
+        paginationHtml += `<li class="page-item disabled"><span class="page-link">Anterior</span></li>`;
+    }
+    
+    // Números de página
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+    
+    if (startPage > 1) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadLogs(1)">1</a></li>`;
+        if (startPage > 2) {
+            paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+        } else {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadLogs(${i})">${i}</a></li>`;
+        }
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadLogs(${totalPages})">${totalPages}</a></li>`;
+    }
+    
+    // Botón siguiente
+    if (pagination.has_next) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadLogs(${currentPage + 1})">Siguiente</a></li>`;
+    } else {
+        paginationHtml += `<li class="page-item disabled"><span class="page-link">Siguiente</span></li>`;
+    }
+    
+    paginationEl.innerHTML = paginationHtml;
+}
+
+// Aplicar filtros
+function applyFilters() {
+    loadLogs(1);
+}
+
+// Limpiar filtros
+function clearFilters() {
+    document.getElementById('user-filter').value = '';
+    document.getElementById('action-filter').value = '';
+    document.getElementById('status-filter').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    loadLogs(1);
+}
+
+// Refrescar logs
+function refreshLogs() {
+    loadLogs(currentPage);
+}
+
+// Cambiar elementos por página
+function changePerPage() {
+    perPage = parseInt(document.getElementById('per-page').value);
+    loadLogs(1);
+}
+
+// Mostrar estadísticas
+function showStats() {
+    fetch('/admin/logs/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stat-total-logs').textContent = data.total_logs;
+            document.getElementById('stat-failed-logins').textContent = data.failed_logins;
+            
+            // Usuarios activos
+            const activeUsersTable = document.getElementById('active-users-table');
+            activeUsersTable.innerHTML = data.active_users.map(user => 
+                `<tr><td>${user.username}</td><td>${user.count}</td></tr>`
+            ).join('');
+            
+            // Acciones comunes
+            const topActionsTable = document.getElementById('top-actions-table');
+            topActionsTable.innerHTML = data.top_actions.map(action => 
+                `<tr><td>${action.action}</td><td>${action.count}</td></tr>`
+            ).join('');
+            
+            new bootstrap.Modal(document.getElementById('statsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}SGA UTM | Login{% endblock %}
+{% block nav_links %}{% endblock %}
+{% block nav_user %}Iniciar sesión{% endblock %}
+{% block nav_logout %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+  <div class="card shadow-sm border-0 w-100" style="max-width: 480px;">
+    <div class="card-body p-5">
+      <h3 class="mb-4 text-center">Acceso al SGA UTM</h3>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      <form method="post" action="/login">
+        <div class="mb-4">
+          <label for="username" class="form-label">Usuario o Email</label>
+          <input type="text" class="form-control form-control-lg" id="username" name="username" required autofocus>
+        </div>
+        <div class="mb-4">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control form-control-lg" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg w-100">Ingresar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

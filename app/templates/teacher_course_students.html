@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+{% set current_page = 'courses' %}
+{% set user_role = session.user_role or 'teacher' %}
+{% set user_name = session.user_name or 'Docente' %}
+{% block title %}SGA UTM | Estudiantes de {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Estudiantes de {{ course.name }}</h2>
+        <p class="text-muted mb-0">{{ course.course_code }} • {{ students|length }} estudiante{{ 's' if students|length != 1 else '' }} inscrito{{ 's' if students|length != 1 else '' }}</p>
+    </div>
+    <a href="{{ url_for('teacher.courses') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Volver a mis cursos
+    </a>
+</div>
+
+{% if students %}
+    <!-- Estadísticas resumen -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">{{ students|length }}</div>
+                            <div class="small">Total Estudiantes</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">
+                                {% set avg_sum = students|selectattr('average', 'gt', 0)|map(attribute='average')|sum %}
+                                {% set avg_count = students|selectattr('average', 'gt', 0)|list|length %}
+                                {{ "%.1f"|format(avg_sum / avg_count) if avg_count > 0 else "0.0" }}
+                            </div>
+                            <div class="small">Promedio General</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">
+                                {% set att_sum = students|selectattr('attendance_rate', 'gt', 0)|map(attribute='attendance_rate')|sum %}
+                                {% set att_count = students|selectattr('attendance_rate', 'gt', 0)|list|length %}
+                                {{ "%.1f"|format(att_sum / att_count) }}%
+                            </div>
+                            <div class="small">Asistencia Promedio</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">{{ students|selectattr('status', 'equalto', 'enrolled')|list|length }}</div>
+                            <div class="small">Activos</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de estudiantes -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-users"></i> Lista de Estudiantes
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th class="text-center">Promedio</th>
+                            <th class="text-center">Asistencia</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold text-primary">{{ student.student_code }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                        {{ student.name.split()[0][0] }}{{ student.name.split()[1][0] if student.name.split()|length > 1 else '' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ student.name }}</div>
+                                        {% if student.enrollment_date %}
+                                        <small class="text-muted">Inscrito: {{ student.enrollment_date }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.phone }}</td>
+                            <td class="text-center">
+                                {% if student.average > 0 %}
+                                    <span class="badge bg-{% if student.average >= 70 %}success{% elif student.average >= 60 %}warning{% else %}danger{% endif %} fs-6">
+                                        {{ student.average }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Sin calificar</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if student.attendance_rate > 0 %}
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <span class="me-2">{{ student.attendance_rate }}%</span>
+                                        <div class="progress" style="width: 50px; height: 8px;">
+                                            <div class="progress-bar bg-{% if student.attendance_rate >= 80 %}success{% elif student.attendance_rate >= 70 %}warning{% else %}danger{% endif %}" 
+                                                 style="width: {{ student.attendance_rate }}%"></div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{% if student.status == 'enrolled' %}success{% elif student.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                    {{ student.status | title }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudentDetail({{ student.id }})" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="gradeStudent({{ student.id }}, '{{ student.name }}')" title="Calificar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="markStudentAttendance({{ student.id }}, '{{ student.name }}')" title="Asistencia">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No hay estudiantes inscritos</h4>
+        <p class="text-muted">Este curso aún no tiene estudiantes inscritos.</p>
+        <a href="{{ url_for('teacher.courses') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Volver a mis cursos
+        </a>
+    </div>
+{% endif %}
+
+<!-- Modal para detalles del estudiante -->
+<div class="modal fade" id="studentDetailModal" tabindex="-1" aria-labelledby="studentDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentDetailModalLabel">Detalles del Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="studentDetailContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para calificar estudiante -->
+<div class="modal fade" id="gradeStudentModal" tabindex="-1" aria-labelledby="gradeStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="gradeStudentModalLabel">Calificar Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="gradeForm">
+                    <input type="hidden" id="gradeStudentId" name="student_id">
+                    <div class="mb-3">
+                        <label for="gradeStudentName" class="form-label">Estudiante</label>
+                        <input type="text" class="form-control" id="gradeStudentName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentName" class="form-label">Nombre de la Tarea/Examen</label>
+                        <input type="text" class="form-control" id="assignmentName" name="assignment_name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="score" class="form-label">Puntuación Obtenida</label>
+                            <input type="number" class="form-control" id="score" name="score" min="0" step="0.1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="maxScore" class="form-label">Puntuación Máxima</label>
+                            <input type="number" class="form-control" id="maxScore" name="max_score" min="1" step="0.1" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label for="gradeComments" class="form-label">Comentarios (Opcional)</label>
+                        <textarea class="form-control" id="gradeComments" name="comments" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="submitGrade()">Guardar Calificación</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para marcar asistencia -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attendanceModalLabel">Marcar Asistencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attendanceForm">
+                    <input type="hidden" id="attendanceStudentId" name="student_id">
+                    <div class="mb-3">
+                        <label for="attendanceStudentName" class="form-label">Estudiante</label>
+                        <input type="text" class="form-control" id="attendanceStudentName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendanceDate" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="attendanceDate" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendanceStatus" class="form-label">Estado</label>
+                        <select class="form-select" id="attendanceStatus" name="status" required>
+                            <option value="">Seleccionar estado</option>
+                            <option value="present">Presente</option>
+                            <option value="absent">Ausente</option>
+                            <option value="late">Tarde</option>
+                            <option value="excused">Justificado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendanceNotes" class="form-label">Notas (Opcional)</label>
+                        <textarea class="form-control" id="attendanceNotes" name="notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" onclick="submitAttendance()">Guardar Asistencia</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+const currentCourseId = {{ course.id }};
+
+// Función para ver detalles del estudiante
+function viewStudentDetail(studentId) {
+    const modal = new bootstrap.Modal(document.getElementById('studentDetailModal'));
+    const content = document.getElementById('studentDetailContent');
+    
+    // Mostrar loading
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Obtener detalles del estudiante
+    fetch(`/teacher/students/${studentId}/detail`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const student = data.student;
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" 
+                                 style="width: 80px; height: 80px; font-size: 1.5rem;">
+                                ${student.name.split(' ')[0][0]}${student.name.split(' ')[1] ? student.name.split(' ')[1][0] : ''}
+                            </div>
+                            <h5>${student.name}</h5>
+                            <p class="text-muted">${student.student_code}</p>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Email:</strong><br>
+                                    <span class="text-muted">${student.email}</span>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Teléfono:</strong><br>
+                                    <span class="text-muted">${student.phone || 'No disponible'}</span>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Promedio:</strong><br>
+                                    <span class="badge bg-${student.average >= 70 ? 'success' : student.average >= 60 ? 'warning' : 'danger'}">${student.average}</span>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Asistencia:</strong><br>
+                                    <span class="text-muted">${student.attendance_rate}%</span>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Estado:</strong><br>
+                                    <span class="badge bg-${student.status === 'enrolled' ? 'success' : 'warning'}">${student.status}</span>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <strong>Fecha de Inscripción:</strong><br>
+                                    <span class="text-muted">${student.enrollment_date || 'No disponible'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-chart-line"></i> Calificaciones Recientes</h6>
+                            <div class="list-group list-group-flush">
+                                ${student.recent_grades && student.recent_grades.length > 0 ? 
+                                    student.recent_grades.map(grade => `
+                                        <div class="list-group-item px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>${grade.assignment_name}</strong><br>
+                                                    <small class="text-muted">${grade.date}</small>
+                                                </div>
+                                                <span class="badge bg-${grade.percentage >= 70 ? 'success' : grade.percentage >= 60 ? 'warning' : 'danger'}">${grade.score}/${grade.max_score}</span>
+                                            </div>
+                                        </div>
+                                    `).join('') : 
+                                    '<p class="text-muted">No hay calificaciones registradas</p>'
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar-check"></i> Asistencia Reciente</h6>
+                            <div class="list-group list-group-flush">
+                                ${student.recent_attendance && student.recent_attendance.length > 0 ? 
+                                    student.recent_attendance.map(att => `
+                                        <div class="list-group-item px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>${att.date}</span>
+                                                <span class="badge bg-${att.status === 'present' ? 'success' : att.status === 'late' ? 'warning' : 'danger'}">${att.status}</span>
+                                            </div>
+                                        </div>
+                                    `).join('') : 
+                                    '<p class="text-muted">No hay registros de asistencia</p>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar los detalles del estudiante.
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error de conexión. Intente nuevamente.
+                </div>
+            `;
+        });
+}
+
+// Función para abrir modal de calificación
+function gradeStudent(studentId, studentName) {
+    document.getElementById('gradeStudentId').value = studentId;
+    document.getElementById('gradeStudentName').value = studentName;
+    
+    // Limpiar formulario
+    document.getElementById('gradeForm').reset();
+    document.getElementById('gradeStudentId').value = studentId;
+    document.getElementById('gradeStudentName').value = studentName;
+    
+    const modal = new bootstrap.Modal(document.getElementById('gradeStudentModal'));
+    modal.show();
+}
+
+// Función para enviar calificación
+function submitGrade() {
+    const form = document.getElementById('gradeForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validar datos
+    if (!data.assignment_name || !data.score || !data.max_score) {
+        alert('Por favor complete todos los campos requeridos');
+        return;
+    }
+    
+    if (parseFloat(data.score) > parseFloat(data.max_score)) {
+        alert('La puntuación obtenida no puede ser mayor que la puntuación máxima');
+        return;
+    }
+    
+    fetch(`/teacher/courses/${currentCourseId}/grades`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Calificación guardada exitosamente');
+            bootstrap.Modal.getInstance(document.getElementById('gradeStudentModal')).hide();
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('Error al guardar calificación: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión. Intente nuevamente.');
+    });
+}
+
+// Función para abrir modal de asistencia
+function markStudentAttendance(studentId, studentName) {
+    document.getElementById('attendanceStudentId').value = studentId;
+    document.getElementById('attendanceStudentName').value = studentName;
+    
+    // Limpiar formulario y establecer fecha actual
+    document.getElementById('attendanceForm').reset();
+    document.getElementById('attendanceStudentId').value = studentId;
+    document.getElementById('attendanceStudentName').value = studentName;
+    document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
+    
+    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    modal.show();
+}
+
+// Función para enviar asistencia
+function submitAttendance() {
+    const form = document.getElementById('attendanceForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validar datos
+    if (!data.date || !data.status) {
+        alert('Por favor complete todos los campos requeridos');
+        return;
+    }
+    
+    fetch(`/teacher/courses/${currentCourseId}/attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Asistencia registrada exitosamente');
+            bootstrap.Modal.getInstance(document.getElementById('attendanceModal')).hide();
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('Error al registrar asistencia: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión. Intente nuevamente.');
+    });
+}
+</script>
+{% endblock %}

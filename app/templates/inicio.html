@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio | Academia</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        body { background: #f4f6fb; }
+        .inicio { max-width: 600px; margin: 4rem auto; background: #fff; border-radius: 1rem; box-shadow: 0 2px 16px #0001; padding: 2rem; text-align: center; }
+        h1 { color: #2a3b8f; }
+        a.button { margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    {% extends 'base.html' %}
+    {% block title %}SGA UTM | Inicio{% endblock %}
+    {% block nav_links %}{% endblock %}
+    {% block nav_user %}Bienvenido{% endblock %}
+    {% block nav_logout %}{% endblock %}
+    {% block content %}
+    <div class="row justify-content-center">
+      <div class="col-md-7 col-lg-6 text-center">
+        <h1 class="display-5 mb-3">Sistema de Gestión Académica UTM</h1>
+        <p class="lead mb-4">Accede a tu información académica, cursos, calificaciones y más.<br>Por favor, inicia sesión para continuar.</p>
+        <a href="/login" class="btn btn-primary btn-lg">Iniciar sesión</a>
+      </div>
+    </div>
+    {% endblock %}
+</body>
+</html>

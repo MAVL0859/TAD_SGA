@@ -1,0 +1,731 @@
+{% extends 'base.html' %}
+{% set current_page = 'courses' %}
+{% set user_role = session.user_role or 'teacher' %}
+{% set user_name = session.user_name or 'Docente' %}
+{% block title %}SGA UTM | Mis Cursos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-journal-bookmark me-2"></i>Gestión de Cursos</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" onclick="refreshCourses()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-gear me-1"></i>Herramientas
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="exportGrades()"><i class="bi bi-download me-2"></i>Exportar Calificaciones</a></li>
+                <li><a class="dropdown-item" href="#" onclick="viewReports()"><i class="bi bi-graph-up me-2"></i>Reportes</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="showHelp()"><i class="bi bi-question-circle me-2"></i>Ayuda</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de cursos -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Cursos Activos</h6>
+                        <h3 class="mb-0" id="active-courses-count">-</h3>
+                    </div>
+                    <i class="bi bi-journal-check fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Estudiantes</h6>
+                        <h3 class="mb-0" id="total-students-count">-</h3>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Asignaciones Pendientes</h6>
+                        <h3 class="mb-0" id="pending-assignments">-</h3>
+                    </div>
+                    <i class="bi bi-clock fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Promedio General</h6>
+                        <h3 class="mb-0" id="general-average">-</h3>
+                    </div>
+                    <i class="bi bi-graph-up fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grid de cursos -->
+<div class="row" id="courses-grid">
+    <!-- Los cursos se cargarán aquí dinámicamente -->
+    <div class="col-12 text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando cursos...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para entrar al curso -->
+<div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseModalLabel">
+                    <i class="bi bi-journal-bookmark me-2"></i>
+                    <span id="course-title">Curso</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Navegación de tabs del curso -->
+                <ul class="nav nav-tabs" id="courseTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                            <i class="bi bi-house me-1"></i>Resumen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">
+                            <i class="bi bi-people me-1"></i>Estudiantes
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="grades-tab" data-bs-toggle="tab" data-bs-target="#grades" type="button" role="tab">
+                            <i class="bi bi-graph-up me-1"></i>Calificaciones
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+                            <i class="bi bi-clipboard-check me-1"></i>Tareas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button" role="tab">
+                            <i class="bi bi-calendar-check me-1"></i>Asistencia
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Contenido de los tabs -->
+                <div class="tab-content mt-3" id="courseTabsContent">
+                    <!-- Tab Resumen -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Información del Curso</h6>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p><strong>Código:</strong> <span id="course-code">-</span></p>
+                                        <p><strong>Descripción:</strong> <span id="course-description">-</span></p>
+                                        <p><strong>Créditos:</strong> <span id="course-credits">-</span></p>
+                                        <p><strong>Periodo:</strong> <span id="course-period">-</span></p>
+                                        <p><strong>Total Estudiantes:</strong> <span id="course-students-count">-</span></p>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="mt-4">Actividad Reciente</h6>
+                                <div class="list-group" id="recent-activity">
+                                    <!-- Actividad reciente se cargará aquí -->
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Acciones Rápidas</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="quickGradeEntry()">
+                                        <i class="bi bi-speedometer2 me-1"></i>Ingreso Rápido de Notas
+                                    </button>
+                                    <button class="btn btn-outline-primary" onclick="takeAttendance()">
+                                        <i class="bi bi-check-square me-1"></i>Tomar Asistencia
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="sendAnnouncement()">
+                                        <i class="bi bi-megaphone me-1"></i>Enviar Anuncio
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="downloadRoster()">
+                                        <i class="bi bi-download me-1"></i>Descargar Lista
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Estudiantes -->
+                    <div class="tab-pane fade" id="students" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>Estudiantes Inscritos</h6>
+                            <div class="d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm" placeholder="Buscar estudiante..." id="search-student" style="width: 200px;">
+                                <button class="btn btn-sm btn-outline-primary" onclick="exportStudentList()">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Estado</th>
+                                        <th>Nota Final</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table">
+                                    <!-- Estudiantes se cargarán aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Calificaciones -->
+                    <div class="tab-pane fade" id="grades" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>Gestión de Calificaciones</h6>
+                            <div class="d-flex gap-2">
+                                <select class="form-select form-select-sm" id="grade-filter" style="width: auto;">
+                                    <option value="">Todos los estudiantes</option>
+                                    <option value="passed">Aprobados</option>
+                                    <option value="failed">Reprobados</option>
+                                    <option value="pending">Sin calificar</option>
+                                </select>
+                                <button class="btn btn-sm btn-success" onclick="bulkGradeEntry()">
+                                    <i class="bi bi-speedometer2 me-1"></i>Ingreso Masivo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th>Parcial 1</th>
+                                        <th>Parcial 2</th>
+                                        <th>Final</th>
+                                        <th>Promedio</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grades-table">
+                                    <!-- Calificaciones se cargarán aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Tareas -->
+                    <div class="tab-pane fade" id="assignments" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>Gestión de Tareas y Proyectos</h6>
+                            <button class="btn btn-sm btn-primary" onclick="createAssignment()">
+                                <i class="bi bi-plus me-1"></i>Nueva Tarea
+                            </button>
+                        </div>
+                        <div id="assignments-list">
+                            <!-- Lista de tareas se cargará aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Asistencia -->
+                    <div class="tab-pane fade" id="attendance" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>Control de Asistencia</h6>
+                            <div class="d-flex gap-2">
+                                <input type="date" class="form-control form-control-sm" id="attendance-date">
+                                <button class="btn btn-sm btn-primary" onclick="markAttendance()">
+                                    <i class="bi bi-check-square me-1"></i>Tomar Asistencia
+                                </button>
+                            </div>
+                        </div>
+                        <div id="attendance-grid">
+                            <!-- Grid de asistencia se cargará aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="saveChanges()">
+                    <i class="bi bi-save me-1"></i>Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Variables globales
+let courses = [];
+let currentCourse = null;
+let courseModal;
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    courseModal = new bootstrap.Modal(document.getElementById('courseModal'));
+    loadCourses();
+});
+
+// Cargar cursos del docente
+function loadCourses() {
+    fetch('/teacher/courses/data')
+        .then(response => response.json())
+        .then(data => {
+            courses = data.courses || [];
+            displayCourses();
+            updateSummaryStats(data.stats || {});
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+            showError('Error al cargar cursos');
+        });
+}
+
+// Mostrar cursos en el grid
+function displayCourses() {
+    const grid = document.getElementById('courses-grid');
+    
+    if (courses.length === 0) {
+        grid.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info text-center" role="alert">
+                    <i class="bi bi-info-circle fs-1 mb-3"></i>
+                    <h5>No tienes cursos asignados</h5>
+                    <p class="mb-0">Contacta al administrador para que te asigne cursos.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = courses.map(course => generateCourseCard(course)).join('');
+}
+
+// Generar tarjeta de curso
+function generateCourseCard(course) {
+    const studentsCount = course.students_count || 0;
+    const averageGrade = course.average_grade || 0;
+    const progressPercentage = course.progress_percentage || 0;
+    
+    const statusBadge = getStatusBadge(course.status || 'active');
+    const progressColor = progressPercentage > 70 ? 'success' : progressPercentage > 40 ? 'warning' : 'danger';
+
+    return `
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-truncate">${course.name}</h6>
+                        ${statusBadge}
+                    </div>
+                    <small class="opacity-75">Código: ${course.course_code}</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted small mb-3">
+                        ${course.description || 'Sin descripción disponible'}
+                    </p>
+                    
+                    <!-- Estadísticas del curso -->
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-primary mb-0">${studentsCount}</h6>
+                                <small class="text-muted">Estudiantes</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h6 class="text-success mb-0">${averageGrade.toFixed(1)}</h6>
+                                <small class="text-muted">Promedio</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-info mb-0">${course.credits}</h6>
+                            <small class="text-muted">Créditos</small>
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Progreso del semestre</small>
+                            <small class="text-muted">${progressPercentage}%</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-${progressColor}" role="progressbar" 
+                                 style="width: ${progressPercentage}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="enterCourse(${course.id})">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Entrar al Curso
+                        </button>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-secondary" onclick="quickGrades(${course.id})" title="Calificaciones">
+                                <i class="bi bi-graph-up"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="quickAttendance(${course.id})" title="Asistencia">
+                                <i class="bi bi-calendar-check"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="courseSettings(${course.id})" title="Configuración">
+                                <i class="bi bi-gear"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Obtener badge de estado
+function getStatusBadge(status) {
+    const badges = {
+        'active': '<span class="badge bg-success">Activo</span>',
+        'inactive': '<span class="badge bg-secondary">Inactivo</span>',
+        'completed': '<span class="badge bg-primary">Completado</span>',
+        'archived': '<span class="badge bg-warning">Archivado</span>'
+    };
+    return badges[status] || '<span class="badge bg-light text-dark">Desconocido</span>';
+}
+
+// Actualizar estadísticas del resumen
+function updateSummaryStats(stats) {
+    document.getElementById('active-courses-count').textContent = stats.active_courses || courses.length;
+    document.getElementById('total-students-count').textContent = stats.total_students || 0;
+    document.getElementById('pending-assignments').textContent = stats.pending_assignments || 0;
+    document.getElementById('general-average').textContent = (stats.general_average || 0).toFixed(1);
+}
+
+// Entrar al curso (abrir modal)
+function enterCourse(courseId) {
+    currentCourse = courses.find(c => c.id === courseId);
+    if (!currentCourse) return;
+
+    // Guardar ID del curso actual para las funciones de gestión
+    window.currentCourseId = courseId;
+
+    // Actualizar título del modal
+    document.getElementById('course-title').textContent = currentCourse.name;
+    
+    // Cargar datos del curso
+    loadCourseData(courseId);
+    
+    // Mostrar modal
+    courseModal.show();
+}
+
+// Cargar datos completos del curso
+function loadCourseData(courseId) {
+    // Actualizar información básica
+    document.getElementById('course-code').textContent = currentCourse.course_code;
+    document.getElementById('course-description').textContent = currentCourse.description || 'Sin descripción';
+    document.getElementById('course-credits').textContent = currentCourse.credits;
+    document.getElementById('course-period').textContent = currentCourse.period || 'No especificado';
+    document.getElementById('course-students-count').textContent = currentCourse.students_count || 0;
+
+    // Cargar estudiantes
+    loadCourseStudents(courseId);
+    
+    // Cargar actividad reciente
+    loadRecentActivity(courseId);
+}
+
+// Cargar estudiantes del curso
+function loadCourseStudents(courseId) {
+    fetch(`/teacher/courses/${courseId}/students/api`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar estudiantes');
+            }
+            return response.json();
+        })
+        .then(students => {
+            displayStudentsTable(students);
+            displayGradesTable(students);
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            const tbody = document.getElementById('students-table');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar estudiantes</td></tr>';
+        });
+}
+
+// Mostrar tabla de estudiantes
+function displayStudentsTable(students) {
+    const tbody = document.getElementById('students-table');
+    
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay estudiantes inscritos</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = students.map(student => `
+        <tr>
+            <td>${student.student_code}</td>
+            <td>${student.full_name}</td>
+            <td>${student.email}</td>
+            <td>${getStudentStatusBadge(student.status)}</td>
+            <td>${student.final_grade ? student.final_grade.toFixed(1) : '-'}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="viewStudentDetail(${student.id})" title="Ver detalles">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="gradeStudent(${student.id})" title="Calificar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Mostrar tabla de calificaciones
+function displayGradesTable(students) {
+    const tbody = document.getElementById('grades-table');
+    
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay estudiantes para calificar</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = students.map(student => {
+        const grades = student.grades || {};
+        const average = calculateAverage(grades);
+        const status = average >= 60 ? 'Aprobado' : average > 0 ? 'Reprobado' : 'Sin evaluar';
+        const statusClass = average >= 60 ? 'success' : average > 0 ? 'danger' : 'secondary';
+
+        return `
+            <tr>
+                <td>${student.full_name}</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${grades.parcial1 || ''}" 
+                           min="0" max="100" 
+                           onchange="updateGrade(${student.id}, 'parcial1', this.value)">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${grades.parcial2 || ''}" 
+                           min="0" max="100" 
+                           onchange="updateGrade(${student.id}, 'parcial2', this.value)">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${grades.final || ''}" 
+                           min="0" max="100" 
+                           onchange="updateGrade(${student.id}, 'final', this.value)">
+                </td>
+                <td><strong>${average > 0 ? average.toFixed(1) : '-'}</strong></td>
+                <td><span class="badge bg-${statusClass}">${status}</span></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Obtener badge de estado del estudiante
+function getStudentStatusBadge(status) {
+    const badges = {
+        'enrolled': '<span class="badge bg-success">Inscrito</span>',
+        'withdrawn': '<span class="badge bg-warning">Retirado</span>',
+        'completed': '<span class="badge bg-primary">Completado</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Desconocido</span>';
+}
+
+// Calcular promedio
+function calculateAverage(grades) {
+    const values = Object.values(grades).filter(g => g && g > 0);
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+}
+
+// Cargar actividad reciente
+function loadRecentActivity(courseId) {
+    const activities = [
+        { type: 'grade', message: 'Se actualizaron 3 calificaciones', time: '2 horas' },
+        { type: 'assignment', message: 'Nueva tarea: "Proyecto Final"', time: '1 día' },
+        { type: 'attendance', message: 'Asistencia tomada para la clase del 15/11', time: '2 días' }
+    ];
+
+    const container = document.getElementById('recent-activity');
+    container.innerHTML = activities.map(activity => `
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-${getActivityIcon(activity.type)} me-2 text-primary"></i>
+                ${activity.message}
+            </div>
+            <small class="text-muted">Hace ${activity.time}</small>
+        </div>
+    `).join('');
+}
+
+// Obtener icono de actividad
+function getActivityIcon(type) {
+    const icons = {
+        'grade': 'graph-up',
+        'assignment': 'clipboard-check',
+        'attendance': 'calendar-check',
+        'announcement': 'megaphone'
+    };
+    return icons[type] || 'info-circle';
+}
+
+// === FUNCIONES PARA GESTIÓN DE ESTUDIANTES ===
+
+// Ver detalles del estudiante
+function viewStudentDetail(studentId) {
+    // Redirigir a la página de detalles del estudiante o abrir modal
+    window.open(`/teacher/students/${studentId}/detail`, '_blank');
+}
+
+// Calificar estudiante
+function gradeStudent(studentId) {
+    // Por ahora redirigir a la vista completa de estudiantes donde están los modales
+    const currentCourseId = document.querySelector('[data-course-id]')?.getAttribute('data-course-id') || 
+                           window.currentCourseId;
+    if (currentCourseId) {
+        window.location.href = `/teacher/courses/${currentCourseId}/students`;
+    } else {
+        alert('Error: No se pudo identificar el curso actual');
+    }
+}
+
+// === FUNCIONES DE ACCIONES RÁPIDAS EXISTENTES ===
+
+function refreshCourses() {
+    loadCourses();
+    showSuccess('Cursos actualizados');
+}
+
+function quickGrades(courseId) {
+    enterCourse(courseId);
+    setTimeout(() => {
+        document.getElementById('grades-tab').click();
+    }, 500);
+}
+
+function quickAttendance(courseId) {
+    enterCourse(courseId);
+    setTimeout(() => {
+        document.getElementById('attendance-tab').click();
+    }, 500);
+}
+
+function courseSettings(courseId) {
+    showInfo('Función de configuración en desarrollo');
+}
+
+function quickGradeEntry() {
+    showInfo('Ingreso rápido de notas en desarrollo');
+}
+
+function takeAttendance() {
+    showInfo('Toma de asistencia en desarrollo');
+}
+
+function sendAnnouncement() {
+    showInfo('Envío de anuncios en desarrollo');
+}
+
+function downloadRoster() {
+    showInfo('Descarga de lista en desarrollo');
+}
+
+function updateGrade(studentId, gradeType, value) {
+    // Aquí implementarías la actualización de calificaciones
+    console.log(`Updating grade for student ${studentId}: ${gradeType} = ${value}`);
+}
+
+function bulkGradeEntry() {
+    showInfo('Ingreso masivo de calificaciones en desarrollo');
+}
+
+function createAssignment() {
+    showInfo('Creación de tareas en desarrollo');
+}
+
+function markAttendance() {
+    showInfo('Marcado de asistencia en desarrollo');
+}
+
+function saveChanges() {
+    showSuccess('Cambios guardados exitosamente');
+}
+
+function exportGrades() {
+    showInfo('Exportación de calificaciones en desarrollo');
+}
+
+function viewReports() {
+    showInfo('Reportes en desarrollo');
+}
+
+function showHelp() {
+    showInfo('Sistema de ayuda en desarrollo');
+}
+
+// === FUNCIONES DE UTILIDAD ===
+
+function showSuccess(message) {
+    showAlert(message, 'success');
+}
+
+function showInfo(message) {
+    showAlert(message, 'info');
+}
+
+function showError(message) {
+    showAlert(message, 'danger');
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.createElement('div');
+    alertContainer.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertContainer);
+    
+    setTimeout(() => {
+        if (alertContainer.parentNode) {
+            alertContainer.remove();
+        }
+    }, 4000);
+}
+</script>
+{% endblock %}

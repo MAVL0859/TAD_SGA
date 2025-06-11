@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% set current_page = 'profile' %}
+{% set user_role = session.user_role or 'student' %}
+{% set user_name = session.user_name or 'Estudiante' %}
+{% block title %}SGA UTM | Mi Perfil{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-10 col-xl-8">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-5">
+        <div class="d-flex flex-column flex-md-row align-items-center mb-4">
+          <img src="{{ profile.avatar_url or 'https://ui-avatars.com/api/?name=' + profile.first_name + '+' + profile.last_name }}" alt="Avatar" class="rounded-circle me-md-4 mb-3 mb-md-0" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #2a3b8f;">
+          <div>
+            <h3 class="mb-1">{{ profile.first_name }} {{ profile.last_name }}</h3>
+            <p class="mb-0 text-muted">{{ user.username }} &bull; {{ user.email }}</p>
+            <span class="badge bg-primary mt-2">Estudiante</span>
+          </div>
+        </div>        <!-- Navegación por pestañas -->
+        <ul class="nav nav-tabs nav-fill mb-4" id="profileTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">
+              <i class="fas fa-user me-2"></i>Información Personal
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic-pane" type="button" role="tab">
+              <i class="fas fa-graduation-cap me-2"></i>Información Académica
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact-pane" type="button" role="tab">
+              <i class="fas fa-phone me-2"></i>Contacto y Emergencia
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button" role="tab">
+              <i class="fas fa-chart-line me-2"></i>Estadísticas
+            </button>
+          </li>
+        </ul>
+
+        <form method="post" action="/student/profile" enctype="multipart/form-data">
+          <div class="tab-content" id="profileTabsContent">
+            
+            <!-- Información Personal -->
+            <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-user text-primary me-2"></i>Nombres</label>
+                  <input type="text" class="form-control" name="first_name" value="{{ profile.first_name }}" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-user text-primary me-2"></i>Apellidos</label>
+                  <input type="text" class="form-control" name="last_name" value="{{ profile.last_name }}" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-envelope text-primary me-2"></i>Email Institucional</label>
+                  <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                  <div class="form-text">Email proporcionado por la universidad</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-id-badge text-primary me-2"></i>Usuario</label>
+                  <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-calendar text-primary me-2"></i>Fecha de Nacimiento</label>
+                  <input type="date" class="form-control" name="birth_date" value="{{ profile.birth_date }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-image text-primary me-2"></i>Foto de Perfil</label>
+                  <input type="file" class="form-control" name="avatar" accept="image/*">
+                  <div class="form-text">Formatos soportados: JPG, PNG, GIF (máx. 2MB)</div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label"><i class="fas fa-map-marker-alt text-primary me-2"></i>Dirección Domiciliaria</label>
+                  <textarea class="form-control" name="address" rows="2" placeholder="Ingresa tu dirección completa">{{ profile.address }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información Académica -->
+            <div class="tab-pane fade" id="academic-pane" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-graduation-cap text-success me-2"></i>Carrera</label>
+                  <select class="form-select" name="major" required>
+                    <option value="">Selecciona tu carrera</option>
+                    <option value="Ingeniería en Sistemas Computacionales" {{ 'selected' if student.major == 'Ingeniería en Sistemas Computacionales' }}>Ingeniería en Sistemas Computacionales</option>
+                    <option value="Ingeniería Civil" {{ 'selected' if student.major == 'Ingeniería Civil' }}>Ingeniería Civil</option>
+                    <option value="Ingeniería Industrial" {{ 'selected' if student.major == 'Ingeniería Industrial' }}>Ingeniería Industrial</option>
+                    <option value="Medicina" {{ 'selected' if student.major == 'Medicina' }}>Medicina</option>
+                    <option value="Administración de Empresas" {{ 'selected' if student.major == 'Administración de Empresas' }}>Administración de Empresas</option>
+                    <option value="Contabilidad y Auditoría" {{ 'selected' if student.major == 'Contabilidad y Auditoría' }}>Contabilidad y Auditoría</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-id-card text-success me-2"></i>Código de Estudiante</label>
+                  <input type="text" class="form-control" value="{{ student.student_id or 'No asignado' }}" disabled>
+                  <div class="form-text">Código único asignado por la universidad</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-calendar-plus text-success me-2"></i>Fecha de Ingreso</label>
+                  <input type="date" class="form-control" value="{{ student.enrollment_date or '' }}" disabled>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-layer-group text-success me-2"></i>Semestre Actual</label>
+                  <input type="text" class="form-control" value="2024-2" disabled>
+                </div>
+                <div class="col-12">
+                  <div class="card bg-light border-0">
+                    <div class="card-body">
+                      <h6 class="card-title"><i class="fas fa-info-circle text-info me-2"></i>Información Académica</h6>
+                      <div class="row text-center">
+                        <div class="col-md-3">
+                          <div class="h4 text-primary mb-0">{{ enrollments|length or 0 }}</div>
+                          <small class="text-muted">Materias Inscritas</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h4 text-success mb-0">0.0</div>
+                          <small class="text-muted">Promedio General</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h4 text-warning mb-0">0</div>
+                          <small class="text-muted">Créditos Cursados</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h4 text-info mb-0">1</div>
+                          <small class="text-muted">Semestre</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contacto y Emergencia -->
+            <div class="tab-pane fade" id="contact-pane" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-mobile-alt text-warning me-2"></i>Teléfono Personal</label>
+                  <input type="tel" class="form-control" name="phone" value="{{ profile.phone }}" placeholder="0991234567">
+                  <div class="form-text">Tu número de teléfono personal</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-envelope text-warning me-2"></i>Email Personal (Opcional)</label>
+                  <input type="email" class="form-control" name="personal_email" value="{{ profile.personal_email or '' }}" placeholder="tu@email.com">
+                </div>
+                <div class="col-12">
+                  <hr class="my-4">
+                  <h6 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Contacto de Emergencia</h6>
+                  <div class="form-text mb-3">Información de una persona a contactar en caso de emergencia</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-user-friends text-danger me-2"></i>Nombre del Contacto</label>
+                  <input type="text" class="form-control" name="emergency_contact" value="{{ profile.emergency_contact }}" placeholder="Nombre completo">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-phone text-danger me-2"></i>Teléfono de Emergencia</label>
+                  <input type="tel" class="form-control" name="emergency_phone" value="{{ profile.emergency_phone }}" placeholder="0991234567">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><i class="fas fa-heart text-danger me-2"></i>Parentesco</label>
+                  <select class="form-select" name="emergency_relationship">
+                    <option value="">Selecciona el parentesco</option>
+                    <option value="Padre">Padre</option>
+                    <option value="Madre">Madre</option>
+                    <option value="Hermano/a">Hermano/a</option>
+                    <option value="Tío/a">Tío/a</option>
+                    <option value="Abuelo/a">Abuelo/a</option>
+                    <option value="Cónyuge">Cónyuge</option>
+                    <option value="Amigo/a">Amigo/a</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="tab-pane fade" id="stats-pane" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-12">
+                  <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-white">
+                      <h5 class="card-title"><i class="fas fa-trophy me-2"></i>Mi Rendimiento Académico</h5>
+                      <div class="row text-center mt-4">
+                        <div class="col-md-3">
+                          <div class="h2 mb-0">{{ enrollments|length or 0 }}</div>
+                          <small>Materias Activas</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h2 mb-0">0</div>
+                          <small>Materias Aprobadas</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h2 mb-0">0.0</div>
+                          <small>Promedio</small>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="h2 mb-0">0%</div>
+                          <small>Progreso</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                      <i class="fas fa-calendar-check fa-2x text-success mb-3"></i>
+                      <h6>Asistencia Promedio</h6>
+                      <div class="h4 text-success">95%</div>
+                      <small class="text-muted">Excelente asistencia</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                      <i class="fas fa-tasks fa-2x text-primary mb-3"></i>
+                      <h6>Tareas Entregadas</h6>
+                      <div class="h4 text-primary">0/0</div>
+                      <small class="text-muted">Al día con entregas</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                      <h6><i class="fas fa-chart-line text-info me-2"></i>Progreso Académico</h6>
+                      <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar bg-gradient" role="progressbar" style="width: 0%">0%</div>
+                      </div>
+                      <small class="text-muted">Avance en la carrera universitaria</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          
+          <div class="mt-4 text-end">
+            <button type="button" class="btn btn-outline-secondary me-2" onclick="window.location.reload()">
+              <i class="fas fa-undo me-2"></i>Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-2"></i>Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

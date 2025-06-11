@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% set current_page = 'courses' %}
+{% set user_role = session.user_role or 'student' %}
+{% set user_name = session.user_name or 'Estudiante' %}
+
+{% block title %}SGA UTM | {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">{{ course.name }}</h2>
+        <p class="text-muted mb-0">{{ course.course_code }} • {{ course.credits }} créditos</p>
+    </div>
+    <a href="{{ url_for('student.courses') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Volver a mis cursos
+    </a>
+</div>
+
+<div class="row">
+    <!-- Información del curso -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Información del Curso
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Código:</strong> {{ course.course_code }}</p>
+                        <p><strong>Nombre:</strong> {{ course.name }}</p>
+                        <p><strong>Créditos:</strong> {{ course.credits }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Profesor:</strong> {{ teacher_name }}</p>
+                        <p><strong>Estado:</strong> 
+                            <span class="badge bg-{% if enrollment.status == 'enrolled' %}success{% else %}secondary{% endif %}">
+                                {{ enrollment.status | title }}
+                            </span>
+                        </p>
+                        {% if course.description %}
+                        <p><strong>Descripción:</strong> {{ course.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calificaciones -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> Mis Calificaciones
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if grades %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Evaluación</th>
+                                <th>Tipo</th>
+                                <th>Calificación</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grade in grades %}
+                            <tr>
+                                <td>{{ grade.assignment_title or 'Evaluación' }}</td>
+                                <td>{{ grade.assignment_type or 'Examen' }}</td>
+                                <td>
+                                    {% if grade.score is not none %}
+                                        <span class="badge bg-{% if grade.score >= 70 %}success{% elif grade.score >= 60 %}warning{% else %}danger{% endif %}">
+                                            {{ grade.score }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ grade.created_at.strftime('%d/%m/%Y') if grade.created_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No hay calificaciones registradas aún.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Asignaciones/Tareas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks"></i> Asignaciones
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if assignments %}
+                <div class="row">
+                    {% for assignment in assignments %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-left-primary">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ assignment.title }}</h6>
+                                <p class="card-text text-muted small">{{ assignment.description or 'Sin descripción' }}</p>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">
+                                        Tipo: {{ assignment.assignment_type or 'Tarea' }}
+                                    </small>
+                                    {% if assignment.due_date %}
+                                    <small class="text-muted">
+                                        Vence: {{ assignment.due_date.strftime('%d/%m/%Y') }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No hay asignaciones publicadas aún.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral con estadísticas -->
+    <div class="col-md-4">
+        <!-- Estadísticas generales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie"></i> Estadísticas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h3 class="text-{% if course_average >= 70 %}success{% elif course_average >= 60 %}warning{% else %}danger{% endif %}">
+                        {{ course_average }}
+                    </h3>
+                    <p class="text-muted mb-0">Promedio General</p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Asistencia</span>
+                        <span class="text-{% if attendance_rate >= 80 %}success{% elif attendance_rate >= 70 %}warning{% else %}danger{% endif %}">
+                            {{ attendance_rate }}%
+                        </span>
+                    </div>
+                    <div class="progress mt-1" style="height: 5px;">
+                        <div class="progress-bar bg-{% if attendance_rate >= 80 %}success{% elif attendance_rate >= 70 %}warning{% else %}danger{% endif %}" 
+                             style="width: {{ attendance_rate }}%"></div>
+                    </div>
+                </div>
+
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h5 class="mb-0">{{ grades|length }}</h5>
+                        <small class="text-muted">Calificaciones</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="mb-0">{{ total_classes }}</h5>
+                        <small class="text-muted">Clases Totales</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del profesor -->
+        {% if teacher_profile %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-tie"></i> Profesor
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    {% if teacher_profile.avatar_url %}
+                    <img src="{{ teacher_profile.avatar_url }}" alt="Foto del profesor" 
+                         class="rounded-circle mb-2" width="60" height="60">
+                    {% else %}
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-user fa-lg"></i>
+                    </div>
+                    {% endif %}
+                    <h6 class="mb-1">{{ teacher_name }}</h6>
+                    {% if teacher_profile.phone %}
+                    <p class="text-muted small mb-0">{{ teacher_profile.phone }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #007bff !important;
+}
+</style>
+{% endblock %}

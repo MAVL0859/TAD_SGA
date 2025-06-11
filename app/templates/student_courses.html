@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% set current_page = 'courses' %}
+{% set user_role = session.user_role or 'student' %}
+{% set user_name = session.user_name or 'Estudiante' %}
+{% block title %}SGA UTM | Mis Cursos{% endblock %}
+{% block content %}
+<h2 class="mb-4">Mis cursos</h2>
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Docente</th>
+        <th>Créditos</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for course in courses %}
+      <tr>
+        <td>{{ course.course_code }}</td>
+        <td>{{ course.name }}</td>
+        <td>{{ course.teacher_name }}</td>
+        <td>{{ course.credits }}</td>
+        <td>{{ course.status }}</td>
+        <td>
+          <a href="/student/courses/{{ course.id }}" class="btn btn-sm btn-outline-primary">Ver detalles</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center">No tienes cursos inscritos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
