@@ -31,7 +31,7 @@ Sistema web de gestión académica desarrollado con Flask y PostgreSQL, implemen
 
 1. **Clonar el repositorio**
 ```bash
-git clone [URL_DEL_REPOSITORIO]
+git clone https://github.com/MAVL0859/TAD_SGA
 cd TAD_SGA
 ```
 
@@ -155,4 +155,4 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ---
 
-**Desarrollado con ❤️ para la Universidad Técnica de Manabí**
+**Desarrollado por Marlon Vera y Jean Pierre Chavez**
