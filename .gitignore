@@ -1,0 +1,8 @@
+# Omitir .env
+.env
+# Omitir archivos de configuración de IDE
+.idea/
+# Omitir archivos de configuración de Visual Studio Code
+.vscode/
+# Omitir archivo
+.github/

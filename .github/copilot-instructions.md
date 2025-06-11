@@ -1,3 +1,0 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
-
-Este proyecto es una API y dashboard web para gestión académica usando Flask y Clean Architecture. Considera roles diferenciados (admin, teacher, student) y PostgreSQL como base de datos. Prioriza separación de capas (domain, usecases, infrastructure, interface) y buenas prácticas de seguridad y autenticación. El usuario admin es el único que puede registrar usuarios y cada usuario solo puede ver su propia información.
